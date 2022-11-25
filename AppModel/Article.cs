@@ -29,5 +29,8 @@ public record Article {
 		public DateTime PublicationTime { get; init; }
 		public string Content { get; init; } = "";
 		public IReadOnlyList<Comment> Children { get; init; } = Array.Empty<Comment>();
+		public bool? IsUpvoted { get; init; }
+		public int UpvoteCount { get; init; }
+		public int DownvoteCount { get; init; }
 	}
 }

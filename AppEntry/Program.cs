@@ -19,5 +19,6 @@ class Program {
 		if (!true) { await AppDbTools.AddRandomData(db, new RandomDataGenerator(123)); }
 		if (true) { await AppScenarios.CheckGetArticleList(db); };
 		if (true) { await AppScenarios.CheckAddNewArticle(db); };
+		if (true) { await AppScenarios.CheckSetCommentVotes(db); };
 	}
 }
