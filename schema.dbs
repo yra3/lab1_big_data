@@ -98,6 +98,22 @@
 				<fk_column name="hub_id" pk="id" />
 			</fk>
 		</table>
+		<table name="comment_vote" >
+			<column name="comment_id" type="uuid" decimal="0" jt="102" mandatory="y" />
+			<column name="user_id" type="uuid" decimal="0" jt="102" mandatory="y" />
+			<column name="creation_time" type="timestamptz" decimal="6" jt="93" />
+			<column name="is_upvote" type="boolean" length="1" decimal="0" jt="-7" />
+			<index name="pk_comment_vote" unique="PRIMARY_KEY" >
+				<column name="comment_id" />
+				<column name="user_id" />
+			</index>
+			<fk name="fk_user" to_schema="public" to_table="app_user" update_action="cascade" >
+				<fk_column name="user_id" pk="id" />
+			</fk>
+			<fk name="fk_comment" to_schema="public" to_table="article_comment" delete_action="cascade" update_action="cascade" >
+				<fk_column name="comment_id" pk="id" />
+			</fk>
+		</table>
 		<table name="company" >
 			<comment><![CDATA[Компания]]></comment>
 			<column name="id" type="uuid" jt="102" mandatory="y" >
@@ -275,12 +291,14 @@ AS '$libdir/uuid-ossp', $function$uuid_ns_x500$function$
 ;]]></string>
 		</function>
 	</schema>
+	<connector name="PostgreSQL" database="PostgreSQL" driver_class="org.postgresql.Driver" driver_jar="postgresql-42.4.0.jar" driver_desc="Standard" host="10.0.2.15" port="11004" instance="postgres" user="postgres" passwd="cXdlMTIz" useSystemProxy="false" />
 	<layout name="Default Layout" id="Layout-2047" joined_routing="y" show_relation="no_text" >
 		<comment><![CDATA[mini_habr]]></comment>
 		<entity schema="public" name="app_user" color="3986C1" x="912" y="64" />
 		<entity schema="public" name="article" color="C1D8EE" x="48" y="48" />
 		<entity schema="public" name="article_comment" color="C1D8EE" x="240" y="656" />
 		<entity schema="public" name="article_hub_link" color="C1D8EE" x="288" y="96" />
+		<entity schema="public" name="comment_vote" color="3986C1" x="592" y="320" />
 		<entity schema="public" name="company" color="C1D8EE" x="1264" y="64" />
 		<entity schema="public" name="hub" color="C1D8EE" x="480" y="64" />
 		<entity schema="public" name="poll" color="C1D8EE" x="240" y="464" />

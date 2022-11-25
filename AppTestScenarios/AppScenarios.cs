@@ -105,4 +105,71 @@ public static class AppScenarios {
 		}
 		Logger.Log($"{nameof(AppScenarios)}.{nameof(CheckAddNewArticle)}: ok");
 	}
+
+	public static async Task CheckSetCommentVotes(Db db) {
+		var client = new AppClient(db);
+		var currentUserId = Guid.Parse("d6bd5bde-7c57-3b81-3487-d1f1f2ebe27b");
+		client = client with {
+			CurrentUserId = currentUserId,
+		};
+		Check.IsTrue(client != null);
+		var articleWithCommentsId = Guid.Parse("5ae0355c-9511-b234-9f22-a164cb138255");
+		var userUuids = new System.Collections.Generic.List<string>(){
+			  "d6bd5bde-7c57-3b81-3487-d1f1f2ebe27b"
+			, "78661aad-03d9-819a-2145-84cd9b4d1e54"
+		};
+		Article? article;
+		foreach (var userUuid in userUuids) {
+			var userId = Guid.Parse(userUuid);
+			var userClient = client with {
+				CurrentUserId = userId,
+			};
+			article = await userClient.GetArticle(articleWithCommentsId);
+			Check.IsTrue(article != null);
+			foreach (var comment in article.Comments) {
+				bool? isUpvote = new Random(Seed: 3).Next(3) switch {
+					0 => true,
+					1 => false,
+					_ => null,
+				};
+				var isUpvoted = comment.IsUpvoted;
+				var changeResult = await userClient.SetCommentVote(comment.Id, isUpvote);
+				if (isUpvote == isUpvoted) {
+					Check.IsTrue(!changeResult);
+				}
+				else {
+					Check.IsTrue(changeResult);
+				}
+			}
+		}
+		article = await client.GetArticle(articleWithCommentsId);
+		Check.IsTrue(article != null);
+		var comments = article.Comments;
+		foreach (var comment in comments) {
+			Logger.Log(@$"
+{nameof(AppScenarios)}.{nameof(CheckSetCommentVotes)}:
+comment {comment.Id}: {comment.UpvoteCount} Upvotes
+and {comment.DownvoteCount} Downvotes".Trim());
+		}
+		foreach (var comment in comments) {
+			var isUpvoted = comment.IsUpvoted;
+			var isUpvotedText = isUpvoted switch {
+				true => "Upvoted",
+				false => "Downvoted",
+				_ => "Not voted",
+			};
+			Logger.Log(@$"
+{nameof(AppScenarios)}.{nameof(CheckSetCommentVotes)}:
+comment {comment.Id}: isUpvoted = {isUpvoted}
+({isUpvotedText})".Trim());
+		}
+		var anonymousClient = new AppClient(db);
+		Check.IsTrue(anonymousClient != null);
+		var commentIds = article.Comments.Select(c => c.Id).ToList();
+		Check.IsTrue(!await anonymousClient.SetCommentVote(commentIds[0], true));
+		var notRealClient = client with {
+			CurrentUserId = Guid.NewGuid(),
+		};
+		Check.IsTrue(!await notRealClient.SetCommentVote(commentIds[0], true));
+	}
 }

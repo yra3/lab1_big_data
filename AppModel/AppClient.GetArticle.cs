@@ -49,7 +49,16 @@ SELECT
 	) AS author,
 	(
 		SELECT
-			(c.id, c.name, c.handle)
+			(
+				c.id, c.name, c.handle,
+				(
+					SELECT EXISTS (
+						SELECT 1
+						FROM company_subscription cs
+						WHERE cs.user_id = :current_user_id AND cs.company_id = a.company_id
+					)
+				)
+			)
 		FROM
 			company c
 		WHERE
@@ -163,7 +172,7 @@ ORDER BY
 			Variants = pollVariantsByPollId.GetValueOrDefault(poll.Id) ?? Array.Empty<Article.Poll.Variant>()
 		}).ToList();
 	}
-	static async Task<IReadOnlyList<Article.Comment>> GetArticleComments(DbCursor cursor, Guid articleId) {
+	async Task<IReadOnlyList<Article.Comment>> GetArticleComments(DbCursor cursor, Guid articleId) {
 		var articleComments = await cursor.QueryList(
 			row => new {
 				ParentCommentId = row.GetGuidOrNull("parent_comment_id"),
@@ -172,6 +181,9 @@ ORDER BY
 					Author = row.GetTuple("author", User.FromIdFullNameHandleSequentialRow),
 					PublicationTime = row.GetUtcDateTime("publication_time"),
 					Content = row.GetString("content"),
+					UpvoteCount = (int)row.GetLong("upvote_count"),
+					DownvoteCount = (int)row.GetLong("downvote_count"),
+					IsUpvoted = row.GetBoolOrNull("is_upvoted"),
 				}
 			},
 			@"
@@ -187,7 +199,18 @@ SELECT
 			au.id = ac.user_id
 	) AS author,
 	ac.publication_time,
-	ac.content
+	ac.content,
+	(SELECT count(cv.comment_id) FROM comment_vote cv where cv.is_upvote AND cv.comment_id = ac.id) AS upvote_count,
+	(SELECT count(cv.comment_id) FROM comment_vote cv where not cv.is_upvote AND cv.comment_id = ac.id) AS downvote_count,
+	(
+		SELECT
+			v.is_upvote AS is_upvoted
+		FROM
+			comment_vote v
+		WHERE
+		v.comment_id = ac.id
+		AND v.user_id = :user_id
+	) AS is_upvoted
 FROM
 	article_comment ac
 WHERE
@@ -195,6 +218,7 @@ WHERE
 ",
 			new() {
 				{ "article_id", articleId },
+				{ "user_id", CurrentUserId },
 			}
 		);
 		var articleCommentsByParentId = articleComments
