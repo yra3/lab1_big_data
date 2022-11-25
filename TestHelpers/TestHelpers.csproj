@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<ProjectReference Include="..\CommonHelpers\CommonHelpers.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="frequency-lists\*.txt" />
+		<EmbeddedResource Include="frequency-lists\*.txt" />
+	</ItemGroup>
+</Project>

@@ -1,0 +1,2 @@
+words-ru 1
+words-en 1

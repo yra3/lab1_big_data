@@ -1,0 +1,15 @@
+{
+	"recommendations": [
+		"adpyke.vscode-sql-formatter",
+		"aliasadidev.nugetpackagemanagergui",
+		"fernandoescolar.vscode-solution-explorer",
+		"formulahendry.dotnet",
+		"hediet.tasks-statusbar",
+		"lacroixdavid1.vscode-format-context-menu",
+		"logerfo.sln-support",
+		"ms-dotnettools.csharp",
+		"npxms.hide-gitignored",
+		"qub.qub-xml-vscode",
+		"richie5um2.vscode-sort-json"
+	]
+}

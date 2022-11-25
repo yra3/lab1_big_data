@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<ProjectReference Include="..\AppModel\AppModel.csproj" />
+		<ProjectReference Include="..\CommonHelpers\CommonHelpers.csproj" />
+		<ProjectReference Include="..\TestHelpers\TestHelpers.csproj" />
+	</ItemGroup>
+</Project>

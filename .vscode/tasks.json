@@ -1,0 +1,55 @@
+{
+	"tasks": [
+		{
+			"command": "dotnet run --configuration=Release",
+			"label": "run AppEntry",
+			"options": {
+				"cwd": "${workspaceFolder}/AppEntry"
+			},
+			"presentation": {
+				"clear": true
+			},
+			"problemMatcher": "$msCompile",
+			"runOptions": {
+				"instanceLimit": 10
+			},
+			"type": "shell"
+		},
+		{
+			"command": "dotnet format --severity info --verify-no-changes",
+			"label": "check-format",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": "$msCompile",
+			"type": "shell"
+		},
+		{
+			"command": "dotnet format --verbosity normal --severity info --exclude-diagnostics IDE0051 IDE0052 IDE0059 IDE0130",
+			"label": "format",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"type": "shell"
+		},
+		{
+			"args": [
+				"build",
+				"${workspaceFolder}/AppEntry/AppEntry.csproj",
+				"--configuration=Debug",
+				"/property:GenerateFullPaths=true"
+			],
+			"command": "dotnet",
+			"label": "build",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"clear": true
+			},
+			"problemMatcher": "$msCompile",
+			"type": "process"
+		}
+	],
+	"version": "2.0.0"
+}
