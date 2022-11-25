@@ -39,13 +39,28 @@ public sealed class DbCursor : IAsyncDisposable {
 	) {
 		CheckNotCommited();
 		await using var command = MakeCommand(sql, parameters);
-		await using var reader = await command.ExecuteReaderAsync(
-			CommandBehavior.SingleResult |
-			CommandBehavior.SequentialAccess,
-			ct
-		);
+		await using var reader = await command.ExecuteReaderAsync(MultipleRowsCommandBehavior, ct);
 		LogReader(reader);
-		var dbRow = new DbRow(reader);
+		var dbRow = new NpgsqlDataReaderDbRow(reader);
+		var items = new List<T>();
+		while (await reader.ReadAsync(ct)) {
+			var item = makeItem(dbRow);
+			dbRow.FinishRow();
+			items.Add(item);
+		}
+		return items;
+	}
+	public async Task<List<T>> QueryListSequentialColumns<T>(
+		Func<SequentialDbRow, T> makeItem,
+		string sql,
+		QueryParameters? parameters = null,
+		CancellationToken ct = default
+	) {
+		CheckNotCommited();
+		await using var command = MakeCommand(sql, parameters);
+		await using var reader = await command.ExecuteReaderAsync(MultipleRowsCommandBehavior, ct);
+		LogReader(reader);
+		var dbRow = new NpgsqlDataReaderSequentialDbRow(reader);
 		var items = new List<T>();
 		while (await reader.ReadAsync(ct)) {
 			var item = makeItem(dbRow);
@@ -63,13 +78,9 @@ public sealed class DbCursor : IAsyncDisposable {
 	) {
 		CheckNotCommited();
 		await using var command = MakeCommand(sql, parameters);
-		await using var reader = await command.ExecuteReaderAsync(
-			CommandBehavior.SingleResult |
-			CommandBehavior.SequentialAccess,
-			ct
-		);
+		await using var reader = await command.ExecuteReaderAsync(MultipleRowsCommandBehavior, ct);
 		LogReader(reader);
-		var dbRow = new DbRow(reader);
+		var dbRow = new NpgsqlDataReaderDbRow(reader);
 		var items = new List<T>();
 		while (await reader.ReadAsync(ct)) {
 			var item = makeItem(dbRow);
@@ -77,6 +88,9 @@ public sealed class DbCursor : IAsyncDisposable {
 			yield return item;
 		}
 	}
+	const CommandBehavior MultipleRowsCommandBehavior =
+		CommandBehavior.SingleResult |
+		CommandBehavior.SequentialAccess;
 	public async Task<T> QueryFirst<T>(
 		Func<DbRow?, T> makeItem,
 		string sql,
@@ -85,16 +99,11 @@ public sealed class DbCursor : IAsyncDisposable {
 	) {
 		CheckNotCommited();
 		await using var command = MakeCommand(sql, parameters);
-		await using var reader = await command.ExecuteReaderAsync(
-			CommandBehavior.SingleResult |
-			CommandBehavior.SingleRow |
-			CommandBehavior.SequentialAccess,
-			ct
-		);
+		await using var reader = await command.ExecuteReaderAsync(SingleRowCommandBehavior, ct);
 		LogReader(reader);
 		T item = default!;
 		var hasItem = false;
-		var dbRow = new DbRow(reader);
+		var dbRow = new NpgsqlDataReaderDbRow(reader);
 		while (await reader.ReadAsync(ct)) {
 			if (hasItem) {
 				continue;
@@ -108,6 +117,10 @@ public sealed class DbCursor : IAsyncDisposable {
 		}
 		return item;
 	}
+	const CommandBehavior SingleRowCommandBehavior =
+		CommandBehavior.SingleResult |
+		CommandBehavior.SingleRow |
+		CommandBehavior.SequentialAccess;
 	NpgsqlCommand MakeCommand(string sql, QueryParameters? parameters) {
 		var command = connection.CreateCommand();
 		command.CommandText = sql.Trim();

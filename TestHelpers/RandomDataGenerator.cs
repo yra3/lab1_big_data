@@ -1,3 +1,4 @@
+using CommonHelpers;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -5,7 +6,8 @@ using System.Linq;
 using System.Text;
 namespace TestHelpers;
 public record RandomDataGenerator(Random Random) {
-	public DateTime AnchorDateTime { get; init; } = DateTime.ParseExact("2021-10-15T10:00:00", "s", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+	public static readonly DateTime DefaultCurrentDateTime = DateTimeHelper.ParseUtcIso("2021-10-15T10:00:00");
+	public DateTime CurrentDateTime { get; init; } = DefaultCurrentDateTime;
 	public RandomDataGenerator(int seed) : this(new Random(seed)) {
 	}
 	static readonly Data data = new();
@@ -30,11 +32,11 @@ public record RandomDataGenerator(Random Random) {
 	static readonly TimeSpan defaultAverageDelta = TimeSpan.FromSeconds(1);
 	public DateTime NextUtcDateTime(TimeSpan? averageDelta = null) {
 		var deltaTicks = (averageDelta ?? TimeSpan.FromDays(30)).Ticks * 2;
-		return AnchorDateTime - TimeSpan.FromTicks(Random.NextInt64(deltaTicks));
+		return CurrentDateTime - TimeSpan.FromTicks(Random.NextInt64(deltaTicks));
 	}
-	public string NextSlug(int averageLength = 10, int minLength = 4) {
+	public string NextHandle(int averageLength = 10, int minLength = 4) {
 		var length = Math.Max(minLength, Random.Next(0, averageLength * 2));
-		return string.Concat(Enumerable.Range(0, length).Select(_ => data.SlugCharacters.NextValue(Random)));
+		return string.Concat(Enumerable.Range(0, length).Select(_ => data.HandleCharacters.NextValue(Random)));
 	}
 	public string NextName(int averageWordCount = 2) {
 		var wordCount = Random.Next(1, averageWordCount * 2);
@@ -103,7 +105,7 @@ public record RandomDataGenerator(Random Random) {
 		public readonly FrequencyList<string> WordSeparators = BuiltInFrequencyLists.Get("word-separators");
 		public readonly FrequencyList<string> SentenceSeparators = BuiltInFrequencyLists.Get("sentence-separators");
 		public readonly FrequencyList<string> SentenceEndings = BuiltInFrequencyLists.Get("sentence-endings");
-		public readonly FrequencyList<char> SlugCharacters = new FrequencyList<char>.Builder {
+		public readonly FrequencyList<char> HandleCharacters = new FrequencyList<char>.Builder {
 			new[]{
 				Enumerable.Range('a', 'z' - 'a' + 1).Select(code => (char)code).Select(c => (c, 10)),
 				Enumerable.Range('0', '9' - '0' + 1).Select(code => (char)code).Select(c => (c, 2)),

@@ -1,100 +1,10 @@
-using Npgsql;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 namespace CommonHelpers;
-public class DbRow {
-	readonly NpgsqlDataReader reader;
-	Dictionary<string, int>? columnIndexes;
-	object[]? bufferedValues;
-	bool bufferedValuesAreDirty = true;
-	int lastSequentialIndex = -1;
-	public DbRow(NpgsqlDataReader reader) {
-		this.reader = reader;
-	}
-	internal void FinishRow() {
-		bufferedValuesAreDirty = true;
-		lastSequentialIndex = -1;
-	}
-	public bool HasColumn(string name) {
-		EnsureBuffered();
-		return columnIndexes.ContainsKey(name);
-	}
-	public object GetObjectValue(string name) {
-		var value = GetObjectValueOrNull(name);
-		if (value == null) {
-			throw new ArgumentNullException(name, "Unexpected DBNull");
-		}
-		return value;
-	}
-	public object? GetObjectValueOrNull(string name) {
-		EnsureBuffered();
-		var index = columnIndexes[name];
-		var value = bufferedValues[index];
-		if (value == DBNull.Value) {
-			return null;
-		}
-		return value;
-	}
-	public object ReadObjectValue() {
-		var value = ReadObjectValueOrNull();
-		if (value == null) {
-			throw new ArgumentNullException($"{lastSequentialIndex}", "Unexpected DBNull");
-		}
-		return value;
-	}
-	public object? ReadObjectValueOrNull() {
-		if (!bufferedValuesAreDirty) {
-			throw new InvalidOperationException("Buffered reading is already started");
-		}
-		lastSequentialIndex += 1;
-		var value = reader.GetValue(lastSequentialIndex);
-		if (value == null) {
-			throw new ArgumentNullException($"at {lastSequentialIndex}");
-		}
-		if (value == DBNull.Value) {
-			return null;
-		}
-		return value;
-	}
-	[MemberNotNull(nameof(columnIndexes), nameof(bufferedValues))]
-	void EnsureBuffered() {
-		if (lastSequentialIndex != -1) {
-			throw new InvalidOperationException("Sequential reading is already started");
-		}
-		if (columnIndexes == null) {
-			columnIndexes = GetColumnIndexes(reader);
-		}
-		if (bufferedValues == null) {
-			bufferedValues = new object[reader.FieldCount];
-		}
-		if (bufferedValuesAreDirty) {
-			FillBufferedValues(bufferedValues, reader);
-			bufferedValuesAreDirty = false;
-		}
-	}
-	static Dictionary<string, int> GetColumnIndexes(NpgsqlDataReader reader) {
-		var fieldCount = reader.FieldCount;
-		var indexes = new Dictionary<string, int>(fieldCount);
-		for (var i = 0; i < fieldCount; i++) {
-			var name = reader.GetName(i);
-			indexes.Add(name, i);
-		}
-		return indexes;
-	}
-	static void FillBufferedValues(object[] bufferedValues, NpgsqlDataReader reader) {
-		var n = bufferedValues.Length;
-		if (reader.FieldCount != n) {
-			throw new InvalidOperationException($"{nameof(reader.FieldCount)} changed from {n} to {reader.FieldCount}");
-		}
-		for (var i = 0; i < bufferedValues.Length; i++) {
-			var bufferedValue = reader.GetValue(i);
-			if (bufferedValue == null) {
-				throw new ArgumentNullException($"at {i}");
-			}
-			bufferedValues[i] = bufferedValue;
-		}
-	}
+public abstract class DbRow {
+	public abstract bool HasColumn(string name);
+	public abstract object GetObjectValue(string name);
+	public abstract object? GetObjectValueOrNull(string name);
 	public bool GetBool(string name) {
 		return (bool)GetObjectValue(name);
 	}
@@ -159,5 +69,32 @@ public class DbRow {
 	}
 	public byte[]? GetByteArrayOrNull(string name) {
 		return (byte[]?)GetObjectValueOrNull(name);
+	}
+	public TItem GetTuple<TItem>(string name, Func<SequentialDbRow, TItem> getItem) {
+		var rowValues = (object?[])GetObjectValue(name);
+		return getItem(new TupleSequentialDbRow(rowValues));
+	}
+	public TItem GetTupleOrNull<TItem>(string name, Func<SequentialDbRow?, TItem> getItem) {
+		var rowValues = (object?[]?)GetObjectValueOrNull(name);
+		return getItem(rowValues == null ? null : new TupleSequentialDbRow(rowValues));
+	}
+	public IReadOnlyList<TItem> GetTupleArray<TItem>(string name, Func<SequentialDbRow, TItem> getItem) {
+		var arrayValue = (object?[]?)GetObjectValueOrNull(name);
+		if (arrayValue == null) {
+			return Array.Empty<TItem>();
+		}
+		var items = new List<TItem>();
+		var dbRow = new TupleSequentialDbRow();
+		for (var i = 0; i < arrayValue.Length; i++) {
+			var values = (object?[]?)arrayValue[i];
+			TItem item;
+			if (values == null) {
+				throw new InvalidOperationException($"Unexpected null at {i}");
+			}
+			dbRow.SetValues(values);
+			item = getItem(dbRow);
+			items.Add(item);
+		}
+		return items;
 	}
 }

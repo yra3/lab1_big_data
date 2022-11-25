@@ -21,6 +21,9 @@
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
+			"presentation": {
+				"clear": true
+			},
 			"problemMatcher": "$msCompile",
 			"type": "shell"
 		},
@@ -30,12 +33,34 @@
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
+			"presentation": {
+				"clear": true
+			},
 			"type": "shell"
+		},
+		{
+			"args": [
+				"clean",
+				"${workspaceFolder}/AppEntry/AppEntry.csproj",
+				"--configuration=Debug",
+				"/property:GenerateFullPaths=true"
+			],
+			"command": "dotnet",
+			"label": "clean",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"clear": true
+			},
+			"problemMatcher": "$msCompile",
+			"type": "process"
 		},
 		{
 			"args": [
 				"build",
 				"${workspaceFolder}/AppEntry/AppEntry.csproj",
+				"--no-incremental=true",
 				"--configuration=Debug",
 				"/property:GenerateFullPaths=true"
 			],

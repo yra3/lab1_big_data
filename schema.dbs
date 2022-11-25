@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="mini_habr" id="Project-a32" database="PostgreSQL" >
+	<schema name="public" >
+		<comment><![CDATA[standard public schema]]></comment>
+		<table name="app_user" >
+			<comment><![CDATA[Пользователь]]></comment>
+			<column name="id" type="uuid" jt="102" mandatory="y" >
+				<defo><![CDATA[uuid_generate_v4()]]></defo>
+			</column>
+			<column name="full_name" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<column name="handle" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<column name="upper(handle)" type="varchar" jt="12" spec="functional" />
+			<index name="pk_app_user" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<index name="unq_app_user_handle" unique="UNIQUE_INDEX" >
+				<column name="upper(handle)" />
+			</index>
+		</table>
+		<table name="article" >
+			<comment><![CDATA[Статья]]></comment>
+			<column name="id" type="uuid" jt="102" mandatory="y" >
+				<defo><![CDATA[uuid_generate_v4()]]></defo>
+			</column>
+			<column name="title" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<column name="content_text" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<column name="author_user_id" type="uuid" jt="102" mandatory="y" />
+			<column name="company_id" type="uuid" jt="102" />
+			<column name="is_published" type="boolean" jt="-7" mandatory="y" >
+				<defo><![CDATA[false]]></defo>
+			</column>
+			<column name="publication_time" type="timestamptz" jt="93" mandatory="y" >
+				<defo><![CDATA[CURRENT_TIMESTAMP]]></defo>
+			</column>
+			<column name="view_count" type="bigint" jt="-5" mandatory="y" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<index name="pk_article" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<fk name="fk_article_app_user" to_schema="public" to_table="app_user" >
+				<fk_column name="author_user_id" pk="id" />
+			</fk>
+			<fk name="fk_article_company" to_schema="public" to_table="company" >
+				<fk_column name="company_id" pk="id" />
+			</fk>
+		</table>
+		<table name="article_comment" >
+			<comment><![CDATA[Комментарий к статье]]></comment>
+			<column name="id" type="uuid" jt="102" mandatory="y" >
+				<defo><![CDATA[uuid_generate_v4()]]></defo>
+			</column>
+			<column name="article_id" type="uuid" jt="102" mandatory="y" />
+			<column name="user_id" type="uuid" jt="102" mandatory="y" />
+			<column name="parent_comment_id" type="uuid" jt="102" />
+			<column name="publication_time" type="timestamptz" jt="93" mandatory="y" >
+				<defo><![CDATA[CURRENT_TIMESTAMP]]></defo>
+			</column>
+			<column name="content" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<index name="pk_article_comment" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<index name="idx_article_comment" unique="NORMAL" >
+				<column name="article_id" />
+				<column name="publication_time" />
+			</index>
+			<fk name="fk_article_comment_article" to_schema="public" to_table="article" >
+				<fk_column name="article_id" pk="id" />
+			</fk>
+			<fk name="fk_article_comment_article_comment" to_schema="public" to_table="article_comment" >
+				<fk_column name="parent_comment_id" pk="id" />
+			</fk>
+			<fk name="fk_article_comment_app_user" to_schema="public" to_table="app_user" >
+				<fk_column name="user_id" pk="id" />
+			</fk>
+		</table>
+		<table name="article_hub_link" >
+			<column name="article_id" type="uuid" jt="102" mandatory="y" />
+			<column name="hub_id" type="uuid" jt="102" mandatory="y" />
+			<index name="pk_article_to_stream" unique="PRIMARY_KEY" >
+				<column name="article_id" />
+				<column name="hub_id" />
+			</index>
+			<fk name="fk_article_to_stream_article" to_schema="public" to_table="article" >
+				<fk_column name="article_id" pk="id" />
+			</fk>
+			<fk name="fk_article_to_stream_stream" to_schema="public" to_table="hub" >
+				<fk_column name="hub_id" pk="id" />
+			</fk>
+		</table>
+		<table name="company" >
+			<comment><![CDATA[Компания]]></comment>
+			<column name="id" type="uuid" jt="102" mandatory="y" >
+				<defo><![CDATA[uuid_generate_v4()]]></defo>
+			</column>
+			<column name="name" type="text" length="100" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<column name="handle" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+				<comment><![CDATA[Кусок URL-а]]></comment>
+			</column>
+			<column name="upper(handle)" type="varchar" jt="12" spec="functional" />
+			<index name="pk_company" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<index name="unq_company_handle" unique="UNIQUE_INDEX" >
+				<column name="upper(handle)" />
+			</index>
+		</table>
+		<table name="hub" >
+			<comment><![CDATA[Хаб (группа статей)]]></comment>
+			<column name="id" type="uuid" jt="102" mandatory="y" >
+				<defo><![CDATA[uuid_generate_v4()]]></defo>
+			</column>
+			<column name="name" type="text" length="100" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<column name="handle" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+				<comment><![CDATA[Кусок URL-а]]></comment>
+			</column>
+			<column name="upper(handle)" type="varchar" jt="12" spec="functional" />
+			<index name="pk_article_group" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<index name="unq_hub_handle" unique="UNIQUE_INDEX" >
+				<column name="upper(handle)" />
+			</index>
+		</table>
+		<table name="poll" >
+			<comment><![CDATA[Опрос]]></comment>
+			<column name="id" type="uuid" jt="102" mandatory="y" >
+				<defo><![CDATA[uuid_generate_v4()]]></defo>
+			</column>
+			<column name="article_id" type="uuid" jt="102" mandatory="y" />
+			<column name="pos" type="integer" jt="4" mandatory="y" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="title" type="text" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<column name="multiple" type="boolean" jt="-7" mandatory="y" >
+				<defo><![CDATA[false]]></defo>
+				<comment><![CDATA[Множественный выбор]]></comment>
+			</column>
+			<index name="pk_poll" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<fk name="fk_poll_article" to_schema="public" to_table="article" >
+				<fk_column name="article_id" pk="id" />
+			</fk>
+		</table>
+		<table name="poll_variant" >
+			<comment><![CDATA[Вариант ответа]]></comment>
+			<column name="id" type="uuid" jt="102" mandatory="y" >
+				<defo><![CDATA[uuid_generate_v4()]]></defo>
+			</column>
+			<column name="poll_id" type="uuid" jt="102" mandatory="y" />
+			<column name="pos" type="integer" jt="4" mandatory="y" >
+				<defo><![CDATA[0]]></defo>
+			</column>
+			<column name="title" type="text" length="100" jt="12" mandatory="y" >
+				<defo><![CDATA[''::text]]></defo>
+			</column>
+			<index name="pk_poll_variant" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+			<fk name="fk_poll_variant_poll" to_schema="public" to_table="poll" >
+				<fk_column name="poll_id" pk="id" />
+			</fk>
+		</table>
+		<table name="user_company_link" >
+			<column name="user_id" type="uuid" jt="102" mandatory="y" />
+			<column name="company_id" type="uuid" jt="102" mandatory="y" />
+			<index name="pk_user_company_link" unique="PRIMARY_KEY" >
+				<column name="user_id" />
+				<column name="company_id" />
+			</index>
+			<fk name="fk_user_company_link_app_user" to_schema="public" to_table="app_user" >
+				<fk_column name="user_id" pk="id" />
+			</fk>
+			<fk name="fk_user_company_link_company" to_schema="public" to_table="company" >
+				<fk_column name="company_id" pk="id" />
+			</fk>
+		</table>
+		<function name="uuid_generate_v1" id="Function-601" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_generate_v1()
+ RETURNS uuid
+ LANGUAGE c
+ PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_generate_v1$function$
+;]]></string>
+		</function>
+		<function name="uuid_generate_v1mc" id="Function-12dd" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_generate_v1mc()
+ RETURNS uuid
+ LANGUAGE c
+ PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_generate_v1mc$function$
+;]]></string>
+		</function>
+		<function name="uuid_generate_v3" id="Function-14d" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_generate_v3(namespace uuid, name text)
+ RETURNS uuid
+ LANGUAGE c
+ IMMUTABLE PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_generate_v3$function$
+;]]></string>
+		</function>
+		<function name="uuid_generate_v4" id="Function-99a" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_generate_v4()
+ RETURNS uuid
+ LANGUAGE c
+ PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_generate_v4$function$
+;]]></string>
+		</function>
+		<function name="uuid_generate_v5" id="Function-1512" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_generate_v5(namespace uuid, name text)
+ RETURNS uuid
+ LANGUAGE c
+ IMMUTABLE PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_generate_v5$function$
+;]]></string>
+		</function>
+		<function name="uuid_nil" id="Function-1333" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_nil()
+ RETURNS uuid
+ LANGUAGE c
+ IMMUTABLE PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_nil$function$
+;]]></string>
+		</function>
+		<function name="uuid_ns_dns" id="Function-996" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_ns_dns()
+ RETURNS uuid
+ LANGUAGE c
+ IMMUTABLE PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_ns_dns$function$
+;]]></string>
+		</function>
+		<function name="uuid_ns_oid" id="Function-8da" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_ns_oid()
+ RETURNS uuid
+ LANGUAGE c
+ IMMUTABLE PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_ns_oid$function$
+;]]></string>
+		</function>
+		<function name="uuid_ns_url" id="Function-617" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_ns_url()
+ RETURNS uuid
+ LANGUAGE c
+ IMMUTABLE PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_ns_url$function$
+;]]></string>
+		</function>
+		<function name="uuid_ns_x500" id="Function-ff8" isSystem="false" params_known="n" >
+			<string><![CDATA[CREATE OR REPLACE FUNCTION public.uuid_ns_x500()
+ RETURNS uuid
+ LANGUAGE c
+ IMMUTABLE PARALLEL SAFE STRICT
+AS '$libdir/uuid-ossp', $function$uuid_ns_x500$function$
+;]]></string>
+		</function>
+	</schema>
+	<layout name="Default Layout" id="Layout-2047" joined_routing="y" show_relation="no_text" >
+		<comment><![CDATA[mini_habr]]></comment>
+		<entity schema="public" name="app_user" color="3986C1" x="912" y="64" />
+		<entity schema="public" name="article" color="C1D8EE" x="48" y="48" />
+		<entity schema="public" name="article_comment" color="C1D8EE" x="240" y="656" />
+		<entity schema="public" name="article_hub_link" color="C1D8EE" x="288" y="96" />
+		<entity schema="public" name="company" color="C1D8EE" x="1264" y="64" />
+		<entity schema="public" name="hub" color="C1D8EE" x="480" y="64" />
+		<entity schema="public" name="poll" color="C1D8EE" x="240" y="464" />
+		<entity schema="public" name="poll_variant" color="C1D8EE" x="400" y="528" />
+		<entity schema="public" name="user_company_link" color="C1D8EE" x="1088" y="96" />
+	</layout>
+</project>

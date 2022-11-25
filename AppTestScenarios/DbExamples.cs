@@ -82,7 +82,7 @@ FROM
 ");
 		var idSum = 0;
 		await foreach (var row in rows) {
-			if (false) {
+			if (!true) {
 				Logger.Log(row);
 			}
 			idSum += row.Id;

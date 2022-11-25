@@ -22,6 +22,7 @@
 	},
 	"csharp.suppressHiddenDiagnostics": false,
 	"debug.onTaskErrors": "showErrors",
+	"debug.terminal.clearBeforeReusing": true,
 	"dotnet.enableTelemetry": false,
 	"editor.detectIndentation": false,
 	"editor.insertSpaces": false,
@@ -44,5 +45,6 @@
 	"omnisharp.enableRoslynAnalyzers": true,
 	"omnisharp.organizeImportsOnFormat": true,
 	"omnisharp.projectLoadTimeout": 300,
-	"qub-xml-vscode.telemetry.enabled": false
+	"qub-xml-vscode.telemetry.enabled": false,
+	"terminal.integrated.detectLocale": "off"
 }

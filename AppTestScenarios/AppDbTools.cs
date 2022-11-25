@@ -5,11 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TestHelpers;
 namespace AppTestScenarios;
-public static class DbTools {
-	public static async Task CleanAndAddRandomData(Db db, RandomDataGenerator rg) {
-		await TruncateAllTables(db);
-		await AddRandomData(db, rg);
-	}
+public static class AppDbTools {
 	public static async Task TruncateAllTables(Db db) {
 		await using var cursor = await db.Connect(readWrite: true);
 		var tableNames = await GetTableNames(cursor);
@@ -41,7 +37,7 @@ ORDER BY
 			return new QueryParameters() {
 				{ "id", rg.NextGuid() },
 				{ "name", rg.NextName() },
-				{ "slug", rg.NextSlug() },
+				{ "handle", rg.NextHandle() },
 			};
 		}).ToList();
 		await InsertMultiple(cursor, "company", companies);
@@ -49,7 +45,7 @@ ORDER BY
 			return new QueryParameters() {
 				{ "id", rg.NextGuid() },
 				{ "full_name", rg.NextName() },
-				{ "login", rg.NextSlug() },
+				{ "handle", rg.NextHandle() },
 			};
 		}).ToList();
 		await InsertMultiple(cursor, "app_user", users);
@@ -57,7 +53,7 @@ ORDER BY
 			return new QueryParameters() {
 				{ "id", rg.NextGuid() },
 				{ "name", rg.NextName() },
-				{ "slug", rg.NextSlug() },
+				{ "handle", rg.NextHandle() },
 			};
 		}).ToList();
 		await InsertMultiple(cursor, "hub", hubs);
@@ -65,16 +61,17 @@ ORDER BY
 			return new QueryParameters() {
 				{ "id", rg.NextGuid() },
 				{ "title", rg.NextSentence(averageMinimumWordCount: 10) },
-				{ "content", rg.NextText(averageMinimumLength: 5000, averageMinimumWordCountInSentence: 10) },
+				{ "content_text", rg.NextText(averageMinimumLength: 5000, averageMinimumWordCountInSentence: 10) },
 				{ "author_user_id", rg.NextArrayElement(users).GetValue("id") },
-				{ "publication_time", (DateTime?)(rg.NextBool(0.8) ? rg.NextUtcDateTime() : null) },
-				{ "modification_time", rg.NextUtcDateTime() },
+				{ "company_id", rg.NextBool(0.5) ? rg.NextArrayElement(companies).GetValue("id") : null },
+				{ "is_published", rg.NextBool(0.8) },
+				{ "publication_time", rg.NextUtcDateTime() },
 				{ "view_count", rg.Random.NextInt64(1000000) },
 			};
 		}).ToList();
 		await InsertMultiple(cursor, "article", articles);
-		await InsertLinks(cursor, rg, "article_hub_link", articles, "article_id", 6, hubs, "hub_id");
-		await InsertLinks(cursor, rg, "user_company_link", users, "user_id", 2, companies, "company_id");
+		await InsertLinks(cursor, rg, "article_hub_link", articles, "article_id", 0, 5, hubs, "hub_id");
+		await InsertLinks(cursor, rg, "user_company_link", users, "user_id", 0, 2, companies, "company_id");
 		var polls = new List<QueryParameters>();
 		var pollVariants = new List<QueryParameters>();
 		foreach (var article in rg.NextArrayElements(articles, 0.1)) {
@@ -112,9 +109,8 @@ ORDER BY
 					{ "article_id", article.GetValue("id") },
 					{ "user_id", rg.NextArrayElement(users).GetValue("id") },
 					{ "parent_comment_id", parentCommentId },
-					{ "publication_time", (DateTime?)(rg.NextBool(0.9) ? rg.NextUtcDateTime() : null) },
-					{ "modification_time", rg.NextUtcDateTime() },
-					{ "content", rg.NextText(1000) },
+					{ "publication_time", rg.NextUtcDateTime() },
+					{ "content", rg.NextText(averageMinimumLength: 300, averageMinimumWordCountInSentence: 10) },
 				};
 				comments.Add(comment);
 				parentCommentIds.Add(commentId);
@@ -147,13 +143,14 @@ ORDER BY
 		string tableName,
 		IReadOnlyList<QueryParameters> rows1,
 		string key1,
-		int averageCount1,
+		int minCount1,
+		int maxCount1,
 		IReadOnlyList<QueryParameters> rows2,
 		string key2
 	) {
 		var links = new List<QueryParameters>();
 		foreach (var row1 in rows1) {
-			var averageCount = rg.Random.Next(averageCount1);
+			var averageCount = rg.Random.Next(minCount1, maxCount1 - 1);
 			for (var i = 0; i < averageCount; i++) {
 				var link = new QueryParameters {
 					{ key1, row1.GetValue("id") },

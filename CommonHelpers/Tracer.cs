@@ -49,10 +49,10 @@ public class Tracer {
 		new ("Name", -30, s => s.Name),
 		new ("AvgTime,ms", 10, s => DurationToString(s.AvgDuration)),
 		new ("[min, max]", 15, s => $"[{DurationToString(s.MinDuration)} {DurationToString(s.MaxDuration)}]"),
-		new ("TotTasks", 10, s =>  FormattableString.Invariant($"{s.TotalCount}")),
+		new ("TotTasks", 10, s => FormattableString.Invariant($"{s.TotalCount}")),
 		new ("TotTime", 10, s => DurationToString(s.TotalDuration)),
 		new ("TotErrors", 10, s => FormattableString.Invariant($"{s.NumberOfErrors}")),
-		new ("TotTasks/s", 10, s =>  FormattableString.Invariant($"{s.TotalCountPerSecond:F1}")),
+		new ("TotTasks/s", 10, s => FormattableString.Invariant($"{s.TotalCountPerSecond:F1}")),
 		new ("Tasks/s", 10, s => FormattableString.Invariant($"{s.TasksPerSecond:F1}")),
 	};
 	static readonly IReadOnlyList<Column> headerColumns = columns.Select(column => column with {

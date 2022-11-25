@@ -7,7 +7,7 @@
 			"cwd": "${workspaceFolder}/AppEntry",
 			"enableStepFiltering": false,
 			"internalConsoleOptions": "neverOpen",
-			"justMyCode": false,
+			"justMyCode": true,
 			"logging": {
 				"moduleLoad": false
 			},
