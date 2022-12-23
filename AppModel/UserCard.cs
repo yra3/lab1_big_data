@@ -6,4 +6,6 @@ public record UserCard {
 	public string Handle { get; init; } = "";
 	public int ArticleCount { get; init; }
 	public int CommentCount { get; init; }
+	public int Karma { get; init; }
+	public int KarmaVoteCount { get; init; }
 }

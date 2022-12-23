@@ -11,6 +11,8 @@ public partial record AppClient {
 				Handle = row.GetString("handle"),
 				ArticleCount = row.GetInt("article_count"),
 				CommentCount = row.GetInt("comment_count"),
+				Karma = (int)row.GetLong("karma"),
+				KarmaVoteCount = (int)row.GetLong("karma_vote_count"),
 			},
 			@"
 SELECT
@@ -35,7 +37,23 @@ SELECT
 		WHERE
 			a.is_published
 			AND ac.user_id = au.id
-	) AS comment_count
+	) AS comment_count,
+	(
+		SELECT
+			COALESCE(sum(CASE WHEN is_upvote THEN 1 ELSE -1 END), 0)
+		FROM
+			karma_vote kv
+		WHERE
+			kv.target_user_id = au.id
+	) AS karma,
+	(
+		SELECT
+			COUNT(*)
+		FROM
+			karma_vote kv
+		WHERE
+			kv.target_user_id = au.id
+	) AS karma_vote_count
 FROM
 	app_user au
 WHERE

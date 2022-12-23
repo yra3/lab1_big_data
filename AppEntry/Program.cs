@@ -21,5 +21,6 @@ class Program {
 		if (true) { await AppScenarios.CheckAddNewArticle(db); };
 		if (true) { await AppScenarios.CheckSetCommentVotes(db); };
 		if (true) { await AppScenarios.CheckCompanySubscription(db); };
+		if (true) { await AppScenarios.CheckUsersKarma(db); };
 	}
 }
