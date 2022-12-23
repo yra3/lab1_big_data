@@ -211,4 +211,37 @@ public static async Task CheckCompanySubscription(Db db) {
 		Check.IsTrue(!await anonymousClient.RemoveCompanySubscription(companyId));
 		Check.IsTrue(!await notRealClient.RemoveCompanySubscription(companyId));
 	}
+	public static async Task CheckUsersKarma(Db db) {
+		var currentUserId = Guid.Parse("e65e7d2b-49d7-8268-7dc2-bc09022f4127");
+		var targetUserId = Guid.Parse("e65e7d2b-49d7-8268-7dc2-bc09022f4129");
+		var notRealUserId = Guid.Parse("e65e7d2b-49d7-8268-7dc2-bc09022f3128");
+		var (client3, anonymousClient, notRealClient) = GetClientsForTest(db);
+		var karmaChangerClient = client3 with {
+			CurrentUserId = currentUserId,
+		};
+		var articleAuthorClient = client3 with {
+			CurrentUserId = targetUserId,
+		};
+		Check.IsTrue(karmaChangerClient != null);
+		await karmaChangerClient.SetKarmaVote(targetUserId, null);
+		var articleId = Guid.Parse("3a30ea1c-61dd-2cfc-8930-48048f26e4bb");
+		var article1 = await articleAuthorClient.GetArticle(articleId);
+		Check.IsTrue(article1 != null);
+		await articleAuthorClient.SetArticleIsPublished(articleId, true);
+		Check.IsTrue(await karmaChangerClient.SetKarmaVote(targetUserId, true));
+		Check.IsTrue(!await karmaChangerClient.SetKarmaVote(targetUserId, true));
+		Check.IsTrue(await karmaChangerClient.SetKarmaVote(targetUserId, null));
+		Check.IsTrue(await karmaChangerClient.SetKarmaVote(targetUserId, false));
+		Check.IsTrue(!await karmaChangerClient.SetKarmaVote(notRealUserId, true));
+		Check.IsTrue(!await notRealClient.SetKarmaVote(targetUserId, true));
+		Check.IsTrue(!await anonymousClient.SetKarmaVote(targetUserId, true));
+		Logger.Log($"{nameof(AppScenarios)}.{nameof(karmaChangerClient.SetKarmaVote)}: ok");
+		var userCard = await karmaChangerClient.GetUserCard(targetUserId);
+		Check.IsTrue(userCard != null);
+		Logger.Log($"{nameof(AppScenarios)}.{nameof(karmaChangerClient.GetUserCard)}: ok");
+		Check.IsTrue(await articleAuthorClient.SetArticleIsPublished(articleId, false));
+		Check.IsTrue(!await articleAuthorClient.SetArticleIsPublished(articleId, false));
+		Check.IsTrue(!await articleAuthorClient.SetArticleIsPublished(articleId, true));
+		Logger.Log($"{nameof(AppScenarios)}.{nameof(articleAuthorClient.SetArticleIsPublished)}: ok");
+	}
 }

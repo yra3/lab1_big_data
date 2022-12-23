@@ -33,6 +33,9 @@ ORDER BY
 	}
 	public static async Task AddRandomData(Db db, RandomDataGenerator rg) {
 		await using var cursor = await db.Connect(readWrite: true);
+		var currentUserId = Guid.Parse("e65e7d2b-49d7-8268-7dc2-bc09022f4127");
+		var targetUserId = Guid.Parse("e65e7d2b-49d7-8268-7dc2-bc09022f4129");
+		var _articleId = Guid.Parse("3a30ea1c-61dd-2cfc-8930-48048f26e4bb");
 		var companies = Enumerable.Range(0, 1000).Select(_ => {
 			return new QueryParameters() {
 				{ "id", rg.NextGuid() },
@@ -48,6 +51,16 @@ ORDER BY
 				{ "handle", rg.NextHandle() },
 			};
 		}).ToList();
+		users[0] = new QueryParameters() {
+				{ "id", currentUserId },
+				{ "full_name", rg.NextName() },
+				{ "handle", rg.NextHandle() },
+			};
+		users[1] = new QueryParameters() {
+				{ "id", targetUserId },
+				{ "full_name", rg.NextName() },
+				{ "handle", rg.NextHandle() },
+			};
 		await InsertMultiple(cursor, "app_user", users);
 		var hubs = Enumerable.Range(0, 1000).Select(_ => {
 			return new QueryParameters() {
@@ -69,6 +82,16 @@ ORDER BY
 				{ "view_count", rg.Random.NextInt64(1000000) },
 			};
 		}).ToList();
+		articles[0] = new QueryParameters() {
+				{ "id", _articleId },
+				{ "title", rg.NextSentence(averageMinimumWordCount: 10) },
+				{ "content_text", rg.NextText(averageMinimumLength: 5000, averageMinimumWordCountInSentence: 10) },
+				{ "author_user_id", targetUserId },
+				{ "company_id", rg.NextBool(0.5) ? rg.NextArrayElement(companies).GetValue("id") : null },
+				{ "is_published", rg.NextBool(0.8) },
+				{ "publication_time", rg.NextUtcDateTime() },
+				{ "view_count", rg.Random.NextInt64(1000000) },
+			};
 		await InsertMultiple(cursor, "article", articles);
 		await InsertLinks(cursor, rg, "article_hub_link", articles, "article_id", 0, 5, hubs, "hub_id");
 		await InsertLinks(cursor, rg, "user_company_link", users, "user_id", 0, 2, companies, "company_id");
@@ -117,6 +140,21 @@ ORDER BY
 			}
 		}
 		await InsertMultiple(cursor, "article_comment", comments);
+		var karmas = Enumerable.Range(0, 50).Select(_ => {
+			return new QueryParameters() {
+				{ "target_user_id", rg.NextArrayElement(users).GetValue("id") },
+				{ "user_id", rg.NextArrayElement(users).GetValue("id") },
+				{ "is_upvote", rg.NextBool(0.8) },
+				{ "creation_time", rg.NextUtcDateTime() },
+			};
+		}).ToList();
+		karmas[0] = new QueryParameters() {
+				{ "target_user_id", targetUserId },
+				{ "user_id", currentUserId },
+				{ "is_upvote", rg.NextBool(0.8) },
+				{ "creation_time", rg.NextUtcDateTime() },
+			};
+		await InsertMultiple(cursor, "karma_vote", karmas);
 		await cursor.Commit();
 	}
 	public static async Task<int> InsertMultiple(DbCursor cursor, string tableName, IEnumerable<QueryParameters> multipleParameters, string conflictNames = "") {
