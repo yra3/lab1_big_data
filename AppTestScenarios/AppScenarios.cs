@@ -172,4 +172,43 @@ comment {comment.Id}: isUpvoted = {isUpvoted}
 		};
 		Check.IsTrue(!await notRealClient.SetCommentVote(commentIds[0], true));
 	}
+	private static (AppClient, AppClient, AppClient) GetClientsForTest(Db db) {
+		var client = new AppClient(db);
+		var currentUserId = Guid.Parse("0f544913-3f71-1cc9-640b-c85dfcf1bd8e");
+		client = client with {
+			CurrentUserId = currentUserId,
+		};
+		var anonymousClient = new AppClient(db);
+		Check.IsTrue(anonymousClient != null);
+		var notRealClient = client with {
+			CurrentUserId = Guid.NewGuid(),
+		};
+		return (client, anonymousClient, notRealClient);
+	}
+public static async Task CheckCompanySubscription(Db db) {
+		// remove all subscriptions
+		var (client, anonymousClient, notRealClient) = GetClientsForTest(db);
+		var companyId = Guid.Parse("3b9bfde5-f66a-895b-185a-6b1cd4c0e161");
+		await client.RemoveCompanySubscription(companyId);
+		Check.IsTrue(await client.AddCompanySubscription(companyId));
+		Check.IsTrue(!await anonymousClient.AddCompanySubscription(companyId));
+		Check.IsTrue(!await notRealClient.AddCompanySubscription(companyId));
+		var articleList = await client.GetArticleList(new() {
+			StartIndex = 1,
+			MaxCount = 300,
+		});
+		foreach (var article in articleList.Articles) {
+			if (article.Company != null) {
+				if (article.Company.Id == companyId) {
+					Check.IsTrue(article.Company.IsSubscribed);
+				}
+				else {
+					Check.IsTrue(!article.Company.IsSubscribed);
+				}
+			}
+		}
+		Check.IsTrue(await client.RemoveCompanySubscription(companyId));
+		Check.IsTrue(!await anonymousClient.RemoveCompanySubscription(companyId));
+		Check.IsTrue(!await notRealClient.RemoveCompanySubscription(companyId));
+	}
 }
