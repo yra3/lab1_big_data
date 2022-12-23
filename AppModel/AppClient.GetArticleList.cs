@@ -47,7 +47,16 @@ SELECT
 	) AS author,
 	(
 		SELECT
-			(c.id, c.name, c.handle)
+			(
+				c.id, c.name, c.handle,
+				(
+					SELECT EXISTS (
+						SELECT 1
+						FROM company_subscription cs
+						WHERE cs.user_id = :current_user_id AND cs.company_id = a.company_id
+					)
+				)
+			)
 		FROM
 			company c
 		WHERE

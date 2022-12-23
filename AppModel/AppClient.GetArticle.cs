@@ -49,7 +49,16 @@ SELECT
 	) AS author,
 	(
 		SELECT
-			(c.id, c.name, c.handle)
+			(
+				c.id, c.name, c.handle,
+				(
+					SELECT EXISTS (
+						SELECT 1
+						FROM company_subscription cs
+						WHERE cs.user_id = :current_user_id AND cs.company_id = a.company_id
+					)
+				)
+			)
 		FROM
 			company c
 		WHERE
@@ -192,22 +201,22 @@ SELECT
 	ac.publication_time,
 	ac.content,
 	(
-		SELECT 
-			count(cv.comment_id) 
-		FROM 
-			comment_vote cv 
-		WHERE 
-			cv.is_upvote 
+		SELECT
+			count(cv.comment_id)
+		FROM
+			comment_vote cv
+		WHERE
+			cv.is_upvote
 			AND cv.comment_id = ac.id
 	) AS upvote_count,
 	(
-		SELECT 
-			count(cv.comment_id) 
-		FROM 
-			comment_vote cv 
-		WHERE 
-			not cv.is_upvote 
-		AND 
+		SELECT
+			count(cv.comment_id)
+		FROM
+			comment_vote cv
+		WHERE
+			not cv.is_upvote
+		AND
 			cv.comment_id = ac.id
 	) AS downvote_count,
 	(
