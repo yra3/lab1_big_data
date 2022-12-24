@@ -140,6 +140,22 @@ ORDER BY
 			}
 		}
 		await InsertMultiple(cursor, "article_comment", comments);
+		var notes = new List<QueryParameters>();
+		foreach (var user in rg.NextArrayElements(users, 0.7)) {
+			var notesCount = rg.Random.Next(1, 3);
+			var targetUserGuid = user.GetValue("id");
+			for (var noteNum = 0; noteNum < notesCount; noteNum++) {
+				var authorUserGuid = rg.NextArrayElement(users).GetValue("id");
+				var note = new QueryParameters() {
+					{ "target_user_id", targetUserGuid },
+					{ "user_id", authorUserGuid },
+					{ "content_text", rg.NextText(50) },
+					{ "modification_time", rg.NextUtcDateTime()}
+				};
+				notes.Add(note);
+			}
+		}
+		await InsertMultiple(cursor, "note_about_user", notes);
 		var karmas = Enumerable.Range(0, 50).Select(_ => {
 			return new QueryParameters() {
 				{ "target_user_id", rg.NextArrayElement(users).GetValue("id") },
