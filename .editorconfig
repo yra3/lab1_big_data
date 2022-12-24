@@ -8,8 +8,12 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 indent_style = tab
 
+[*.dbs]
+insert_final_newline = false
+
 [*.sln]
 charset = utf-8-bom
+end_of_line = crlf
 
 [*.cs]
 csharp_indent_block_contents = true
