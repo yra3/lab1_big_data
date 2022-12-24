@@ -188,6 +188,19 @@
 				<fk_column name="user_id" pk="id" />
 			</fk>
 		</table>
+		<table name="note_about_user" >
+			<column name="target_user_id" type="uuid" decimal="0" jt="102" mandatory="y" />
+			<column name="user_id" type="uuid" decimal="0" jt="102" mandatory="y" />
+			<column name="content_text" type="text" length="250" jt="12" />
+			<column name="modification_time" type="timestamptz" jt="93" />
+			<index name="pk_note_about_user" unique="PRIMARY_KEY" >
+				<column name="target_user_id" />
+				<column name="user_id" />
+			</index>
+			<fk name="fk_note_about_user_app_user" to_schema="public" to_table="app_user" delete_action="cascade" update_action="cascade" >
+				<fk_column name="target_user_id" pk="id" />
+			</fk>
+		</table>
 		<table name="poll" >
 			<comment><![CDATA[Опрос]]></comment>
 			<column name="id" type="uuid" jt="102" mandatory="y" >
@@ -337,6 +350,7 @@ AS '$libdir/uuid-ossp', $function$uuid_ns_x500$function$
 		<entity schema="public" name="company_subscription" color="3986C1" x="1040" y="304" />
 		<entity schema="public" name="hub" color="C1D8EE" x="480" y="64" />
 		<entity schema="public" name="karma_vote" color="3986C1" x="1056" y="368" />
+		<entity schema="public" name="note_about_user" color="C1D8EE" x="912" y="224" />
 		<entity schema="public" name="poll" color="C1D8EE" x="240" y="464" />
 		<entity schema="public" name="poll_variant" color="C1D8EE" x="400" y="528" />
 		<entity schema="public" name="user_company_link" color="C1D8EE" x="1088" y="96" />

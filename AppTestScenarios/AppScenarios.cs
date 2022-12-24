@@ -243,4 +243,70 @@ comment {comment.Id}: isUpvoted = {isUpvoted}
 		Check.IsTrue(!await articleAuthorClient.SetArticleIsPublished(articleId, true));
 		Logger.Log($"{nameof(AppScenarios)}.{nameof(articleAuthorClient.SetArticleIsPublished)}: ok");
 	}
+	public static async Task CheckSetNoteAboutUser(Db db) {
+		var anonymousClient = new AppClient(db);
+		var clientId = Guid.Parse("d6bd5bde-7c57-3b81-3487-d1f1f2ebe27b");
+		var currentUserId = clientId;
+		var client = anonymousClient with {
+			CurrentUserId = currentUserId,
+		};
+		var targetUserId = Guid.Parse("78661aad-03d9-819a-2145-84cd9b4d1e54");
+		await client.SetNoteAboutUser(targetUserId, "");
+		Check.IsTrue(!await client.SetNoteAboutUser(Guid.Parse("d6bd5bde-7c57-3b81-3487-d1f1f2ebe17b"), "test1"));
+		Check.IsTrue(await client.SetNoteAboutUser(targetUserId, "test1"));
+		Check.IsTrue(await client.GetNoteAboutUser(targetUserId) == "test1");
+		Check.IsTrue(await client.SetNoteAboutUser(targetUserId, "test2"));
+		Check.IsTrue(await client.GetNoteAboutUser(targetUserId) == "test2");
+		Check.IsTrue(await client.SetNoteAboutUser(targetUserId, ""));
+		Check.IsTrue(await client.GetNoteAboutUser(targetUserId) == "");
+		Logger.Log($"{nameof(AppScenarios)}.{nameof(CheckSetNoteAboutUser)}: ok");
+	}
+	public static async Task CheckGetNoteAboutUser(Db db) {
+		var anonymousClient = new AppClient(db);
+		var currentUserId = Guid.Parse("d6bd5bde-7c57-3b81-3487-d1f1f2ebe27b");
+		var client = anonymousClient with {
+			CurrentUserId = currentUserId,
+		};
+		var testNote2 = "test2";
+		var targetUserId = Guid.Parse("78661aad-03d9-819a-2145-84cd9b4d1e54");
+		Check.IsTrue(!await client.SetNoteAboutUser(Guid.Parse("d6bd5bde-7c57-3b81-3487-d1f1f2ebe17b"), ""));
+		Check.IsTrue(await client.SetNoteAboutUser(targetUserId, testNote2));
+		Check.IsTrue(await client.GetNoteAboutUser(targetUserId) == testNote2);
+		Check.IsTrue(await client.SetNoteAboutUser(targetUserId, ""));
+		Check.IsTrue(await client.GetNoteAboutUser(targetUserId) == "");
+		Logger.Log($"{nameof(AppScenarios)}.{nameof(CheckGetNoteAboutUser)}: ok");
+	}
+	public static async Task CheckGetNotesAboutUser(Db db) {
+		var (client, anonymousClient, notRealClient) = GetClientsForTest(db);
+		var anotherClient1 = anonymousClient with {
+			CurrentUserId = Guid.Parse("78661aad-03d9-819a-2145-84cd9b4d1e54"),
+		};
+		var anotherClient2 = anonymousClient with {
+			CurrentUserId = Guid.Parse("23d53560-c302-d084-26c3-8441bd62df58"),
+		};
+		await client.SetNoteAboutUser((Guid)anotherClient1.CurrentUserId, "");
+		await client.SetNoteAboutUser((Guid)anotherClient2.CurrentUserId, "");
+		var notes_about_user = await client.GetNotesAboutUser();
+		var startNotesCount = notes_about_user.Count;
+		var testNote1 = "test1";
+		var testNote2 = "test2";
+		Check.IsTrue(!await client.SetNoteAboutUser(Guid.NewGuid(), "test1"));
+		Check.IsTrue(await client.SetNoteAboutUser((Guid)anotherClient1.CurrentUserId, testNote1));
+		Check.IsTrue(await client.SetNoteAboutUser((Guid)anotherClient2.CurrentUserId, testNote2));
+		notes_about_user = await client.GetNotesAboutUser();
+		var notesCount = notes_about_user.Count;
+		Check.IsTrue(notesCount == startNotesCount + 2);
+		Check.IsTrue(notes_about_user[notesCount - 2].TargetUser.Id == anotherClient1.CurrentUserId);
+		Check.IsTrue(notes_about_user[notesCount - 2].Content == "test1");
+		Check.IsTrue(notes_about_user[notesCount - 1].TargetUser.Id == anotherClient2.CurrentUserId);
+		Check.IsTrue(notes_about_user[notesCount - 1].Content == "test2");
+		Check.IsTrue(await client.SetNoteAboutUser((Guid)anotherClient1.CurrentUserId, ""));
+		Check.IsTrue(await client.SetNoteAboutUser((Guid)anotherClient2.CurrentUserId, ""));
+		notes_about_user = await client.GetNotesAboutUser();
+		notesCount = notes_about_user.Count;
+		Check.IsTrue(notesCount == startNotesCount);
+		Check.IsTrue(!await anonymousClient.SetNoteAboutUser((Guid)anotherClient1.CurrentUserId, ""));
+		Check.IsTrue(!await notRealClient.SetNoteAboutUser((Guid)anotherClient1.CurrentUserId, ""));
+		Logger.Log($"{nameof(AppScenarios)}.{nameof(CheckGetNotesAboutUser)}: ok");
+	}
 }
